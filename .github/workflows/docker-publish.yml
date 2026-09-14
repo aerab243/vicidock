@@ -41,11 +41,16 @@ jobs:
             SVN_REV="${{ env.VICIDIAL_SVN_REV }}"
           else
             SVN_REV="${{ inputs.svn_rev }}"
+            TAG=""
           fi
           [[ "$SVN_REV" =~ ^[0-9]+$ ]] \
             || { echo "svn_rev invalide: $SVN_REV" >&2; exit 1; }
           echo "tag=${GITHUB_REF_NAME} svn_rev=$SVN_REV"
-          echo "svn_rev=$SVN_REV" >> "$GITHUB_OUTPUT"
+          {
+            echo "svn_rev=$SVN_REV"
+            echo "ghcr_full=${GITHUB_REF_NAME}"
+            echo "ghcr_minor=v${TAG%.*}"
+          } >> "$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -61,10 +66,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=raw,value=${{ steps.ver.outputs.ghcr_full }}
+            type=raw,value=${{ steps.ver.outputs.ghcr_minor }}
             type=raw,value=latest
-            type=sha,prefix=sha-
           labels: |
             vicidock.vicidial-rev=${{ steps.ver.outputs.svn_rev }}
 

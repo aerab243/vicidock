@@ -14,28 +14,28 @@ Les tags versionnent **vicidock** (l'image + l'outillage), pas VICIdial :
 
 ## Sémantique : patch, minor, majeur (exemples)
 
-- **PATCH** (`0.1.0` → `0.1.1`) : correctif rétrocompatible. Exemples :
+- **PATCH** (`v0.1.0` → `v0.1.1`) : correctif rétrocompatible. Exemples :
   bug d'entrypoint (PID MariaDB, placeholders d'includes), bump de paquets,
   fix de sécurité Apache, docs.
-- **MINOR** (`0.1.x` → `0.2.0`) : nouveauté rétrocompatible. Exemples :
+- **MINOR** (`v0.1.x` → `v0.2.0`) : nouveauté rétrocompatible. Exemples :
   nouvelle variable optionnelle, nouveau programme supervisé, guides
   Dokploy/Openship, support WebRTC, montée de rev VICIdial.
-- **MAJOR** (`0.x` → `1.0.0`) : rupture. Exemples : format du compose
+- **MAJOR** (`v0.x` → `v1.0.0`) : rupture. Exemples : format du compose
   incompatible, variable obligatoire nouvelle, changement d'OS de base,
   passage multi-images, montée majeure d'Asterisk.
-- Tant qu'on est en `0.x`, l'API (compose, `.env`) peut encore bouger ;
-  `1.0.0` marquera la stabilité promise.
+- Tant qu'on est en `v0.x`, l'API (compose, `.env`) peut encore bouger ;
+  `v1.0.0` marquera la stabilité promise.
 
 ## Tags d'images publiés (GHCR)
 
 | Tag | Sens | Usage |
 |---|---|---|
 | `latest` | Dernière release | Découverte, test |
-| `0.1` | Dernière `0.1.x` | **Prod** (suit les patchs) |
-| `0.1.0` | Build exact | Reproductibilité stricte |
-| `sha-…` | Commit source | Traçabilité |
+| `v0.1` | Dernière `v0.1.x` | **Prod** (suit les patchs) |
+| `v0.1.0` | Build exact | Reproductibilité stricte |
 
-Épingler en prod dans le `.env` : `VICIDOCK_TAG=0.1`.
+Exemple : `ghcr.io/aerab243/vicidock:v0.1.0`. Tirage par digest
+(`...@sha256:…`) toujours possible nativement, sans tag `sha-*` en vitrine.
 
 ## Mettre à jour
 
@@ -53,7 +53,7 @@ docker compose up -d
   compose config, lint Dockerfile, parse des confs, `php -l`). **Aucune
   publication.**
 - Tag `v*` → `docker-publish` : build (~10 min, cache), **scan Trivy
-  (bloque si CVE critique)**, push GHCR.
+  (bloque si CVE critique)**, push GHCR (`v0.1.0` + `v0.1` + `latest`).
 - `workflow_dispatch` (input `svn_rev`) → build + scan **sans push** :
   répétition générale avant de taguer.
 - Pas de rebuild planifié : les patchs suivent via des tags à la demande.
@@ -62,14 +62,14 @@ docker compose up -d
 
 ```bash
 # 1. Valider d'abord sans publier : Actions → docker-publish → Run workflow
-# 2. Taguer :
+# 2. Taguer (après validation du mainteneur) :
 git tag v0.1.0 && git push origin v0.1.0
 # 3. Vérifier : run vert, tags présents sur GHCR, pull ciblé en local :
-VICIDOCK_TAG=0.1.0 docker compose pull
+VICIDOCK_TAG=v0.1.0 docker compose pull
 ```
 
 ## Matrice actuelle
 
 | Image | VICIdial | Asterisk | PHP | MariaDB | Base |
 |---|---|---|---|---|---|
-| `0.1.0` | trunk rev 3939 (schéma 1729) | 18.21.0-vici | 8.2 (Remi) | 10.11 | AlmaLinux 9 |
+| `v0.1.0` | trunk rev 3939 (schéma 1729) | 18.21.0-vici | 8.2 (Remi) | 10.11 | AlmaLinux 9 |
