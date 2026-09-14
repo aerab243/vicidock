@@ -65,11 +65,15 @@ jobs:
           build-args: |
             VICIDIAL_SVN_REV=${{ inputs.svn_rev || '3939' }}
 
+      # Action officielle : binaire Trivy direct sur le runner (pas de pull
+      # Docker Hub, pas de socket), avec acces a l'image locale vicidock:scan.
       - name: Scan Trivy (bloque si CVE critique)
-        run: |
-          docker run --rm \
-            aquasecurity/trivy:latest image --exit-code 1 --severity CRITICAL \
-            --no-progress vicidock:scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: vicidock:scan
+          format: table
+          severity: CRITICAL
+          exit-code: 1
 
       - name: Build and push
         uses: docker/build-push-action@v6
