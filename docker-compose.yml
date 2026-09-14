@@ -1,0 +1,56 @@
+services:
+  vicidial-db:
+    image: mariadb:10.11
+    container_name: vicidock-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: asterisk
+      MYSQL_USER: cron
+      MYSQL_PASSWORD: ${MYSQL_CRON_PASSWORD:-cronpassword}
+    volumes:
+      - db_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vicidock-net
+
+  vicidial:
+    # Image communautaire pré-définie (pas d'image officielle VICIdial).
+    # 1.2 GB, pull : docker pull ahroniy/vicidial
+    image: ahroniy/vicidial:latest
+    container_name: vicidock-vicidial
+    restart: unless-stopped
+    privileged: true # requis pour le timing DAHDI / Meetme d'Asterisk
+    depends_on:
+      vicidial-db:
+        condition: service_healthy
+    environment:
+      VICIDIAL_DB_HOST: vicidial-db
+      VICIDIAL_DB_NAME: asterisk
+      VICIDIAL_DB_USER: cron
+      VICIDIAL_DB_PASS: ${MYSQL_CRON_PASSWORD:-cronpassword}
+      SERVER_IP: ${SERVER_IP:-127.0.0.1}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "5060:5060/udp"
+      - "5060:5060/tcp"
+      - "10000-10500:10000-10500/udp"
+    volumes:
+      - recordings:/var/spool/asterisk/monitor
+    networks:
+      - vicidock-net
+
+volumes:
+  db_data:
+  recordings:
+
+networks:
+  vicidock-net:
+    driver: bridge
