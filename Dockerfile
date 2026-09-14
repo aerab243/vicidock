@@ -45,14 +45,14 @@ RUN mkdir -p asterisk && cd asterisk && \
     wget -q https://download.vicidial.com/required-apps/${ASTERISK_TARBALL} -O asterisk.tar.gz && \
     echo "${ASTERISK_SHA256}  asterisk.tar.gz" | sha256sum -c - && \
     tar xzf asterisk.tar.gz && cd asterisk-18*/ && \
-    ./configure --prefix=/usr --libdir=/usr/lib64 --sysconfdir=/etc/asterisk --localstatedir=/var \
+    ./configure --prefix=/usr --libdir=/usr/lib64 --sysconfdir=/etc --localstatedir=/var \
         --with-gsm=internal --with-ssl --enable-asteriskssl --with-pjproject-bundled --with-jansson-bundled && \
     make menuselect/menuselect menuselect-tree menuselect.makeopts && \
     menuselect/menuselect --enable res_http_websocket menuselect.makeopts && \
     menuselect/menuselect --enable res_srtp menuselect.makeopts && \
     make -j$(nproc) && make install && make samples && \
     sed -i 's|noload = chan_sip.so|;noload = chan_sip.so|g' /etc/asterisk/modules.conf || true && \
-    ldconfig && test -x /usr/sbin/asterisk && test -d /usr/include/asterisk && test -d /etc/asterisk
+    ldconfig && test -x /usr/sbin/asterisk && test -d /usr/include/asterisk && test -f /etc/asterisk/modules.conf
 RUN wget -q http://download.vicidial.com/required-apps/asterisk-perl-0.08.tar.gz -O astperl.tar.gz && \
     echo "${ASTPERL_SHA256}  astperl.tar.gz" | sha256sum -c - && \
     tar xzf astperl.tar.gz && cd asterisk-perl-0.08 && \

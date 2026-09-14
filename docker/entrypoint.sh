@@ -12,7 +12,7 @@ TRUNK=/usr/src/astguiclient/trunk
 CRONTAB_SRC=/usr/local/share/vicidock/vicidial-crontab
 MARKER=/var/lib/mysql/.vicidock-init-done
 
-mkdir -p /run/mysqld /run/httpd /var/log/astguiclient /var/log/asterisk
+mkdir -p /run/mysqld /run/httpd /run/asterisk /var/log/astguiclient /var/log/asterisk
 chown -R mysql:mysql /run/mysqld /var/lib/mysql
 chown apache:apache /run/httpd
 
