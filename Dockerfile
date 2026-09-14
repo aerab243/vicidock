@@ -56,9 +56,17 @@ RUN mkdir -p asterisk && cd asterisk && \
 # Dépendances partagées du binaire (détectées via ldd) + celles des modules
 # chargés dynamiquement (pjproject/srtp/jansson/ogg) : recopiées avec leurs
 # chemins pour l'image runtime qui ne les a pas.
-RUN mkdir -p /ast-deps && \
+RUN stage_lib() { \
+        dest="/ast-deps$1"; \
+        case "$dest" in \
+            /ast-deps/lib64/*) dest="/ast-deps/usr/lib64/${dest#/ast-deps/lib64/}";; \
+            /ast-deps/lib/*) dest="/ast-deps/usr/lib/${dest#/ast-deps/lib/}";; \
+        esac; \
+        mkdir -p "$(dirname "$dest")" && cp -L "$1" "$dest"; \
+    }; \
+    mkdir -p /ast-deps && \
     ldd /usr/sbin/asterisk | awk '/=> \//{print $3}' | while read -r lib; do \
-        mkdir -p "/ast-deps$(dirname "$lib")" && cp -L "$lib" "/ast-deps$lib"; \
+        stage_lib "$lib"; \
     done && \
     for pat in '/usr/lib/libpj*.so*' '/usr/lib64/libpj*.so*' \
                '/usr/lib/libsrtp*.so*' '/usr/lib64/libsrtp*.so*' \
@@ -67,7 +75,7 @@ RUN mkdir -p /ast-deps && \
                '/usr/lib/libvorbis*.so*' '/usr/lib64/libvorbis*.so*'; do \
         for f in $pat; do \
             [ -e "$f" ] || continue; \
-            mkdir -p "/ast-deps$(dirname "$f")" && cp -L "$f" "/ast-deps$f"; \
+            stage_lib "$f"; \
         done; \
     done && find /ast-deps -name '*.so*' | sort
 RUN wget -q http://download.vicidial.com/required-apps/asterisk-perl-0.08.tar.gz -O astperl.tar.gz && \
