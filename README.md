@@ -3,6 +3,7 @@
 [![validate](https://github.com/aerab243/vicidock/actions/workflows/validate.yml/badge.svg)](https://github.com/aerab243/vicidock/actions/workflows/validate.yml)
 [![docker-publish](https://github.com/aerab243/vicidock/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/aerab243/vicidock/actions/workflows/docker-publish.yml)
 [![ghcr](https://img.shields.io/badge/ghcr.io-vicidock-blue?logo=docker)](https://github.com/aerab243/vicidock/pkgs/container/vicidock)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 
 **Une seule image** avec tout VICIdial dedans (web, Asterisk, MariaDB,
 daemons Perl), calquée sur **ViciBox 12.0.2**. **Versionnage semver
@@ -50,3 +51,9 @@ Base AlmaLinux 9 · VICIdial trunk SVN · Asterisk 18.21.0-vici (ConfBridge,
 PJSIP, res_http_websocket, srtp) · Apache + PHP 8.2 · MariaDB 10.11 (interne
 uniquement) · Perl + modules CPAN · crontab VICIdial · supervisord.
 Détails : [architecture](docs/architecture.md).
+
+## Licence
+
+Vicidock (Dockerfile, scripts, compose, docs) : **Apache-2.0**, voir
+[LICENSE](LICENSE). VICIdial embarqué dans l'image : sa licence propre
+(AGPL, projet [vicidial.org](http://www.vicidial.org)).
