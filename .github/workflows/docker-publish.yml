@@ -4,19 +4,22 @@ on:
   push:
     branches: [main]
     tags: ["v*"]
+  schedule:
+    # Rebuild mensuel : suit les patchs de sécurité AlmaLinux/Remi
+    - cron: "0 3 1 * *"
   workflow_dispatch:
     inputs:
       svn_rev:
-        description: "Révision SVN VICIdial à builder (ex. 3939 ou HEAD)"
+        description: "Révision SVN VICIdial à builder (ex. 3939)"
         required: false
-        default: "HEAD"
+        default: "3939"
 
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build-and-push:
+  build-scan-push:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -48,6 +51,24 @@ jobs:
             type=match,pattern=v(.*),group=1
             type=sha
 
+      - name: Build (local, sans push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          push: false
+          tags: vicidock:scan
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            VICIDIAL_SVN_REV=${{ inputs.svn_rev || '3939' }}
+
+      - name: Scan Trivy (bloque si CVE critique)
+        run: |
+          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+            aquasecurity/trivy:latest image --exit-code 1 --severity CRITICAL \
+            --no-progress vicidock:scan
+
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
@@ -56,6 +77,5 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
-          cache-to: type=gha,mode=max
           build-args: |
-            VICIDIAL_SVN_REV=${{ inputs.svn_rev || 'HEAD' }}
+            VICIDIAL_SVN_REV=${{ inputs.svn_rev || '3939' }}

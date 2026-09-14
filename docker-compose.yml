@@ -7,9 +7,15 @@ services:
     build:
       context: .
       args:
-        VICIDIAL_SVN_REV: ${VICIDIAL_SVN_REV:-HEAD}
+        VICIDIAL_SVN_REV: ${VICIDIAL_SVN_REV:-3939}
     restart: unless-stopped
-    privileged: true # requis pour le timing DAHDI d'Asterisk
+    privileged: true # requis pour le timing DAHDI d'Asterisk (modprobe, /dev/dahdi)
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 2048
+    tmpfs:
+      - /tmp
+      - /run
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD manquant (voir .env)}
       MYSQL_CRON_PASSWORD: ${MYSQL_CRON_PASSWORD:?MYSQL_CRON_PASSWORD manquant (voir .env)}
@@ -24,6 +30,12 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
       - recordings:/var/spool/asterisk/monitor
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/vicidial/welcome.php"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
 
 volumes:
   mysql_data:

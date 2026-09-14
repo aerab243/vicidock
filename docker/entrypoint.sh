@@ -7,8 +7,9 @@ CUSTOM_PASSWORD="${CUSTOM_PASSWORD:-custom1234}"
 TRUNK=/usr/src/astguiclient/trunk
 MARKER=/var/lib/mysql/.vicidock-init-done
 
-mkdir -p /run/mysqld /var/log/astguiclient
+mkdir -p /run/mysqld /run/httpd /var/log/astguiclient
 chown -R mysql:mysql /run/mysqld /var/lib/mysql
+chown apache:apache /run/httpd
 modprobe dahdi_dummy 2>/dev/null || true
 
 if [ ! -d /var/lib/mysql/mysql ]; then
@@ -73,6 +74,14 @@ fi
 
 sed -i "s|^VARserver_ip.*|VARserver_ip => ${SERVER_IP}|" /etc/astguiclient.conf
 mysql "${ROOT_CNX[@]}" -e "UPDATE asterisk.servers SET server_ip='${SERVER_IP}'" 2>/dev/null || true
+
+if [ ! -f /etc/pki/tls/certs/vicidock.crt ]; then
+  openssl req -x509 -nodes -days 825 -newkey rsa:2048 \
+    -keyout /etc/pki/tls/private/vicidock.key \
+    -out /etc/pki/tls/certs/vicidock.crt \
+    -subj "/CN=${SERVER_IP}"
+fi
+sed -i 's|^SSLCertificateFile .*|SSLCertificateFile /etc/pki/tls/certs/vicidock.crt|; s|^SSLCertificateKeyFile .*|SSLCertificateKeyFile /etc/pki/tls/private/vicidock.key|' /etc/httpd/conf.d/ssl.conf
 
 mysqladmin "${ROOT_CNX[@]}" shutdown
 for i in $(seq 1 30); do
