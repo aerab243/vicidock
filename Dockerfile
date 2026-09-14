@@ -95,7 +95,6 @@ RUN dnf -y install epel-release https://rpms.remirepo.net/enterprise/remi-releas
     dnf clean all && rm -rf /var/cache/dnf
 COPY --from=perldeps /opt/perl5 /opt/perl5
 COPY --from=builder /usr/lib64/asterisk /usr/lib64/asterisk
-COPY --from=builder /usr/lib/asterisk /usr/lib/asterisk
 COPY --from=builder /usr/sbin/asterisk /usr/sbin/asterisk
 COPY --from=builder /etc/asterisk /etc/asterisk
 COPY --from=builder /var/lib/asterisk /var/lib/asterisk
