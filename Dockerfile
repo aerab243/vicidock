@@ -150,10 +150,11 @@ RUN sed -i 's/^;*clear_env = .*/clear_env = no/' /etc/php-fpm.d/www.conf && \
     grep -q '^clear_env = no' /etc/php-fpm.d/www.conf
 COPY docker/entrypoint.sh /usr/local/bin/
 COPY docker/vicidial-perl.sh /usr/local/bin/
+COPY docker/vicidock-apache.conf /etc/httpd/conf.d/00-vicidock.conf
 RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/vicidial-perl.sh
-# Nette le warning AH00558 (aucun effet fonctionnel).
-RUN printf 'ServerName localhost\n' > /etc/httpd/conf.d/00-vicidock.conf
-EXPOSE 80 443 5060/tcp 5060/udp 10000-20000/udp
+# Pas de page d'accueil AlmaLinux : la racine redirige vers VICIdial.
+RUN rm -f /etc/httpd/conf.d/welcome.conf
+EXPOSE 80 443 5060/tcp 5060/udp 10000-15000/udp
 VOLUME ["/var/lib/mysql", "/var/spool/asterisk/monitor"]
 # wget, pas curl : curl n'est pas installé dans l'image (conflit curl-minimal).
 HEALTHCHECK --interval=30s --timeout=10s --start-period=180s --retries=3 \

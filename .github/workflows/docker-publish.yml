@@ -1,7 +1,8 @@
 name: docker-publish
 
-# Publication UNIQUEMENT sur tag de version : v2.14-3939, v2.14-3939.1, ...
-# (docs/versions.md). Validation rapide sur main : workflow validate.yml.
+# Publication UNIQUEMENT sur tag de version semver : v0.1.0, v0.1.1, ...
+# (docs/versions.md). La rev VICIdial vient du défaut ci-dessous ou de
+# l'input dispatch. Validation rapide sur main : workflow validate.yml.
 on:
   push:
     tags: ["v*"]
@@ -15,6 +16,7 @@ on:
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
+  VICIDIAL_SVN_REV: "3939"
 
 jobs:
   build-scan-push:
@@ -29,32 +31,21 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Parse version tag
+      - name: Resolve versions
         id: ver
         run: |
           if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
             TAG="${GITHUB_REF_NAME#v}"
-            [[ "$TAG" =~ ^[0-9]+\.[0-9]+-[0-9]+(\.[0-9]+)?$ ]] \
-              || { echo "Tag invalide: $GITHUB_REF_NAME (attendu vX.Y-REV[.N])" >&2; exit 1; }
-            REV_PART="${TAG##*-}"
-            SVN_REV="${REV_PART%%.*}"
-            BUILD_N="${REV_PART#*.}"
-            [ "$BUILD_N" = "$REV_PART" ] && BUILD_N=0
-            if [ "$BUILD_N" = 0 ]; then GHCR_REV="$TAG"; else GHCR_REV="${TAG%.*}"; fi
-            echo "tag=$TAG svn_rev=$SVN_REV build=$BUILD_N ghcr_rev=$GHCR_REV"
-            {
-              echo "svn_rev=$SVN_REV"
-              echo "build_n=$BUILD_N"
-              echo "ghcr_full=$TAG"
-              echo "ghcr_rev=$GHCR_REV"
-            } >> "$GITHUB_OUTPUT"
+            [[ "$TAG" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] \
+              || { echo "Tag invalide: $GITHUB_REF_NAME (attendu vX.Y.Z)" >&2; exit 1; }
+            SVN_REV="${{ env.VICIDIAL_SVN_REV }}"
           else
             SVN_REV="${{ inputs.svn_rev }}"
-            [[ "$SVN_REV" =~ ^[0-9]+$ ]] \
-              || { echo "svn_rev invalide: $SVN_REV" >&2; exit 1; }
-            echo "svn_rev=$SVN_REV (dispatch, sans push)"
-            echo "svn_rev=$SVN_REV" >> "$GITHUB_OUTPUT"
           fi
+          [[ "$SVN_REV" =~ ^[0-9]+$ ]] \
+            || { echo "svn_rev invalide: $SVN_REV" >&2; exit 1; }
+          echo "tag=${GITHUB_REF_NAME} svn_rev=$SVN_REV"
+          echo "svn_rev=$SVN_REV" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -70,13 +61,12 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=${{ steps.ver.outputs.ghcr_full }}
-            type=raw,value=${{ steps.ver.outputs.ghcr_rev }}
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
             type=raw,value=latest
             type=sha,prefix=sha-
           labels: |
             vicidock.vicidial-rev=${{ steps.ver.outputs.svn_rev }}
-            vicidock.build=${{ steps.ver.outputs.build_n }}
 
       - name: Build (local, sans push)
         uses: docker/build-push-action@v6

@@ -5,8 +5,8 @@
 [![ghcr](https://img.shields.io/badge/ghcr.io-vicidock-blue?logo=docker)](https://github.com/aerab243/vicidock/pkgs/container/vicidock)
 
 **Une seule image** avec tout VICIdial dedans (web, Asterisk, MariaDB,
-daemons Perl), calquée sur **ViciBox 12.0.2**. **Un tag = une version de
-VICIdial** (voir [versions](docs/versions.md)).
+daemons Perl), calquée sur **ViciBox 12.0.2**. **Versionnage semver
+vicidock** : `v0.1.0`, `v0.1.1`, … (voir [versions](docs/versions.md)).
 
 ## Démarrage rapide
 
@@ -26,11 +26,11 @@ crontab, IP et externip SIP/RTP configurés seuls. Ensuite :
 | Tag | Contenu |
 |---|---|
 | `latest` | Dernière release |
-| `2.14-3939` | Dernier build de VICIdial rev 3939 |
-| `2.14-3939.1` | Build exact (rev + patch vicidock) |
+| `0.1` | Dernière `0.1.x` (prod) |
+| `0.1.0` | Build exact |
 | `sha-…` | Build lié à un commit (traçabilité) |
 
-Épingler en prod : `VICIDOCK_TAG=2.14-3939` dans le `.env`.
+Épingler en prod : `VICIDOCK_TAG=0.1` dans le `.env`.
 
 ## Documentation
 
