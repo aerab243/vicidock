@@ -20,6 +20,12 @@ services:
       MYSQL_CRON_PASSWORD: ${MYSQL_CRON_PASSWORD:?MYSQL_CRON_PASSWORD manquant (voir .env)}
       CUSTOM_PASSWORD: ${CUSTOM_PASSWORD:-custom1234}
       SERVER_IP: ${SERVER_IP:-127.0.0.1}
+      # IP publique vue par les correspondants (NAT). Vide = reprend SERVER_IP.
+      # Utilisée pour l'externip SIP/RTP (sans elle : audio à sens unique).
+      PUBLIC_IP: ${PUBLIC_IP:-}
+      # Mot de passe du compte admin 6666 (appliqué au premier boot).
+      # Vide = conserve 6666/1234 (à changer aussitôt dans ce cas).
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       # Fuseau horaire commun système/PHP/MariaDB (ex. Europe/Paris).
       # Un désaccord provoque l'erreur "time synchronization problem".
       TZ: ${TZ:-UTC}
@@ -30,13 +36,14 @@ services:
       - "443:443"
       - "5060:5060/udp"
       - "5060:5060/tcp"
-      - "10000-20000:10000-20000/udp"
+      # Plage RTP réduite (~2500 appels simultanés max) : alignée avec rtp.conf.
+      - "10000-15000:10000-15000/udp"
     volumes:
       - mysql_data:/var/lib/mysql
       - recordings:/var/spool/asterisk/monitor
     healthcheck:
       # wget (pas curl) : curl n'est pas installé dans l'image.
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost/vicidial/welcome.php"]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost/healthcheck.php"]
       interval: 30s
       timeout: 10s
       retries: 3

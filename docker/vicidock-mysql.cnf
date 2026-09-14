@@ -1,0 +1,16 @@
+# VICIdock — tuning MariaDB pour charge call-center (d'après le guide ViciStack,
+# calibré pour un conteneur all-in-one : pas les 4G de buffer d'un serveur dédié).
+# Note : le bug TIMESTAMP de ViciBox 12 est déjà corrigé par le schéma SVN rev 3898+
+# (nous chargeons la rev 3939), aucun contournement nécessaire ici.
+[mysqld]
+innodb_buffer_pool_size = 512M
+innodb_log_file_size = 128M
+innodb_flush_log_at_trx_commit = 2
+innodb_flush_method = O_DIRECT
+max_connections = 300
+max_allowed_packet = 64M
+table_open_cache = 2000
+thread_cache_size = 64
+slow_query_log = 1
+slow_query_log_file = /var/log/mysql/slow.log
+long_query_time = 2

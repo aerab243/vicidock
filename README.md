@@ -38,10 +38,13 @@ surveille la page d'accueil.
 
 ## Premier login et premier appel (10 min)
 
-Login par défaut : `6666` / `1234` — **à changer aussitôt**
-(Admin > Users > 6666). L'entrypoint charge déjà le schéma, les données
-de base (`first_server_install.sql`), les indicatifs (`area codes`),
-la crontab et cale l'IP (`SERVER_IP`) partout.
+Login : `6666` + mot de passe `ADMIN_PASSWORD` du `.env` (défini
+automatiquement au premier boot et signalé dans les logs ; si
+`ADMIN_PASSWORD` est vide, c'est `6666`/`1234` — **à changer aussitôt**).
+L'entrypoint charge déjà le schéma, les données de base
+(`first_server_install.sql`), les indicatifs (`area codes`),
+la crontab, cale l'IP (`SERVER_IP`) partout et écrit l'externip SIP/RTP
+(`PUBLIC_IP`, défaut = `SERVER_IP`) avec les réseaux locaux.
 
 1. Admin > Servers : vérifier timezone et IP (`SERVER_IP` du `.env`).
 2. Admin > Carriers : ajouter le trunk SIP du provider (codec `ulaw`
@@ -80,12 +83,18 @@ Premier build : 30-60 min, image ~2-3 Go. Aucun secret à configurer
 
 ## Notes importantes
 
-- Plage RTP `10000-20000/udp` : à réduire dans le compose + `rtp.conf` si besoin.
+- Plage RTP `10000-15000/udp` (~2500 appels simultanés), alignée entre
+  le compose et `rtp.conf` (réglée automatiquement à chaque boot).
+- Daemons VICIdial sous supervisord (restart auto + logs) + crontab
+  keepalive en filet de sécurité. Healthcheck fonctionnel :
+  `http://localhost/healthcheck.php` (DB + extensions PHP).
+- MariaDB tunée (`/etc/my.cnf.d/vicidock.cnf`) ; schéma rev 3939
+  immunisé contre le bug TIMESTAMP de ViciBox 12.
 - VICIphone 3.0 = softphone web servi par Apache (SIP.js) en WebRTC sur le 443.
 - Timezone : `TZ` dans le `.env` (système + PHP + MariaDB alignés
   automatiquement). Un désaccord affiche `time synchronization problem`.
 - Pare-feu hôte (ex. firewalld) : ouvrir `5060/tcp+udp` (SIP),
-  `10000-20000/udp` (RTP), `80/443/tcp` (web). Sans audio = presque
+  `10000-15000/udp` (RTP), `80/443/tcp` (web). Sans audio = presque
   toujours RTP bloqué ou NAT : renseigner `externip`/`localnet` dans
   la conf SIP Asterisk.
 - Codecs : commencer en `ulaw` (G.711) des deux côtés ; une erreur

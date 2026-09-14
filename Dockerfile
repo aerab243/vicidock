@@ -26,7 +26,8 @@ RUN dnf -y install epel-release dnf-plugins-core && \
     dnf -y groupinstall "Development Tools" && \
     dnf -y install wget tar bzip2 unzip patch perl \
         newt-devel libxml2-devel sqlite-devel libuuid-devel readline-devel \
-        openssl-devel alsa-lib-devel libogg-devel libvorbis-devel curl-devel libedit-devel && \
+        openssl-devel alsa-lib-devel libogg-devel libvorbis-devel curl-devel libedit-devel \
+        opus-devel speex-devel && \
     dnf clean all && rm -rf /var/cache/dnf
 WORKDIR /usr/src
 RUN wget -q https://digip.org/jansson/releases/jansson-2.13.tar.gz -O jansson.tar.gz && \
@@ -115,6 +116,8 @@ RUN dnf -y install epel-release https://rpms.remirepo.net/enterprise/remi-releas
         perl-Mail-Sendmail perl-Mail-POP3Client perl-Mail-IMAPClient \
         perl-Curses perl-TermReadKey perl-Unicode-Map perl-IO-Socket-SSL perl-Text-CSV \
         perl-HTML-Parser perl-HTML-Tagset perl-MIME-tools perl-Digest-SHA1 \
+        perl-Digest-HMAC perl-Net-SSLeay perl-LWP-Protocol-https \
+        opus speex \
         php php-cli php-gd php-curl php-mysqli php-ldap php-zip php-fileinfo \
         php-opcache php-mbstring php-imap php-xml php-soap php-intl php-bcmath && \
     dnf clean all && rm -rf /var/cache/dnf
@@ -139,11 +142,13 @@ RUN cd /var/lib/asterisk/sounds && \
 COPY docker/supervisord.conf /etc/supervisord.conf
 COPY docker/vicidial-crontab /usr/local/share/vicidock/vicidial-crontab
 COPY docker/vicidock-php.ini /etc/php.d/50-vicidock.ini
-COPY docker/entrypoint.sh docker/vicidial-run.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/vicidial-run.sh
+COPY docker/vicidock-mysql.cnf /etc/my.cnf.d/vicidock.cnf
+COPY docker/healthcheck.php /var/www/html/healthcheck.php
+COPY docker/entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/entrypoint.sh
 EXPOSE 80 443 5060/tcp 5060/udp 10000-20000/udp
 VOLUME ["/var/lib/mysql", "/var/spool/asterisk/monitor"]
 # wget, pas curl : curl n'est pas installé dans l'image (conflit curl-minimal).
 HEALTHCHECK --interval=30s --timeout=10s --start-period=180s --retries=3 \
-    CMD wget -q -O /dev/null http://localhost/vicidial/welcome.php || exit 1
+    CMD wget -q -O /dev/null http://localhost/healthcheck.php || exit 1
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
