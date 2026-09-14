@@ -194,11 +194,15 @@ with open(path, 'w') as f:
     f.writelines(out)
 PYEOF
 
-# Plage RTP alignée avec le compose (2500 appels simultanés max).
+# Plage RTP écrite dans Asterisk (défaut 10000-15000, ~2500 appels).
+# Réductible (ex. 10000-10099 = 100 ports) : Docker crée un processus
+# proxy par port mappé, 5000 ports peuvent épuiser une petite machine.
+RTP_START="${RTP_START:-10000}"
+RTP_END="${RTP_END:-15000}"
 if grep -q '^rtpstart' /etc/asterisk/rtp.conf 2>/dev/null; then
-  sed -i 's/^rtpstart.*/rtpstart = 10000/; s/^rtpend.*/rtpend = 15000/' /etc/asterisk/rtp.conf
+  sed -i "s/^rtpstart.*/rtpstart = ${RTP_START}/; s/^rtpend.*/rtpend = ${RTP_END}/" /etc/asterisk/rtp.conf
 elif [ -f /etc/asterisk/rtp.conf ]; then
-  printf '\nrtpstart = 10000\nrtpend = 15000\n' >> /etc/asterisk/rtp.conf
+  printf '\nrtpstart = %s\nrtpend = %s\n' "$RTP_START" "$RTP_END" >> /etc/asterisk/rtp.conf
 fi
 
 # Timing : timerfd en conteneur (pas de module kernel DAHDI possible).
