@@ -118,7 +118,7 @@ RUN dnf -y install epel-release https://rpms.remirepo.net/enterprise/remi-releas
         perl-HTML-Parser perl-HTML-Tagset perl-MIME-tools perl-Digest-SHA1 \
         perl-Digest-HMAC perl-Net-SSLeay perl-LWP-Protocol-https \
         opus speex \
-        php php-cli php-gd php-curl php-mysqli php-ldap php-zip php-fileinfo \
+        php php-cli php-fpm php-gd php-curl php-mysqli php-ldap php-zip php-fileinfo \
         php-opcache php-mbstring php-imap php-xml php-soap php-intl php-bcmath && \
     dnf clean all && rm -rf /var/cache/dnf
 COPY --from=perldeps /opt/perl5 /opt/perl5
@@ -144,6 +144,10 @@ COPY docker/vicidial-crontab /usr/local/share/vicidock/vicidial-crontab
 COPY docker/vicidock-php.ini /etc/php.d/50-vicidock.ini
 COPY docker/vicidock-mysql.cnf /etc/my.cnf.d/vicidock.cnf
 COPY docker/healthcheck.php /var/www/html/healthcheck.php
+# php-fpm nettoie l'environnement par défaut (clear_env=yes) : les workers
+# ne verraient ni MYSQL_CRON_PASSWORD ni les autres secrets du conteneur.
+RUN sed -i 's/^;*clear_env = .*/clear_env = no/' /etc/php-fpm.d/www.conf && \
+    grep -q '^clear_env = no' /etc/php-fpm.d/www.conf
 COPY docker/entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/entrypoint.sh
 EXPOSE 80 443 5060/tcp 5060/udp 10000-20000/udp

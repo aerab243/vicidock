@@ -12,9 +12,9 @@ TRUNK=/usr/src/astguiclient/trunk
 CRONTAB_SRC=/usr/local/share/vicidock/vicidial-crontab
 MARKER=/var/lib/mysql/.vicidock-init-done
 
-mkdir -p /run/mysqld /run/mariadb /run/httpd /run/asterisk /var/log/astguiclient /var/log/asterisk /var/log/mysql /var/log/mariadb
+mkdir -p /run/mysqld /run/mariadb /run/httpd /run/php-fpm /run/asterisk /var/log/astguiclient /var/log/asterisk /var/log/mysql /var/log/mariadb
 chown -R mysql:mysql /run/mysqld /run/mariadb /var/lib/mysql /var/log/mysql /var/log/mariadb
-chown apache:apache /run/httpd
+chown apache:apache /run/httpd /run/php-fpm
 
 # --- Fuseau horaire : système + PHP + MariaDB doivent être d'accord,
 # sinon VICIdial affiche "time synchronization problem" sur chaque page.
