@@ -13,6 +13,7 @@ CRONTAB_SRC=/usr/local/share/vicidock/vicidial-crontab
 MARKER=/var/lib/mysql/.vicidock-init-done
 
 mkdir -p /run/mysqld /run/mariadb /run/httpd /run/php-fpm /run/asterisk /var/log/astguiclient /var/log/asterisk /var/log/mysql /var/log/mariadb
+mkdir -p /var/lib/asterisk/mohmp3 /var/lib/asterisk/quiet-mp3 /var/spool/asterisk/monitor
 chown -R mysql:mysql /run/mysqld /run/mariadb /var/lib/mysql /var/log/mysql /var/log/mariadb
 chown apache:apache /run/httpd /run/php-fpm
 
@@ -197,7 +198,7 @@ PYEOF
 # Includes Asterisk référencés mais absents (ex. pjsip-vicidial.conf avant sa
 # génération par le keepalive) : placeholders vides pour un parse propre.
 grep -rhoE '^[[:space:]]*#[iI]nclude[[:space:]]+[^ ;#]+' /etc/asterisk/*.conf 2>/dev/null | \
-  awk '{print $NF}' | sort -u | while read -r inc; do
+  awk '{gsub(/"/, "", $NF); print $NF}' | sort -u | while read -r inc; do
     case "$inc" in
       *\** | */* | *..*) continue ;;
     esac
