@@ -44,10 +44,6 @@ RUN wget -q https://github.com/cisco/libsrtp/archive/v2.1.0.tar.gz -O libsrtp.ta
     echo "${LIBSRTP_SHA256}  libsrtp.tar.gz" | sha256sum -c - && \
     tar xzf libsrtp.tar.gz && cd libsrtp-2.1.0 && \
     ./configure --prefix=/usr --enable-openssl && make shared_library && make install && ldconfig && cd ..
-RUN wget -q https://downloads.asterisk.org/pub/telephony/libpri/libpri-1.6.1.tar.gz -O libpri.tar.gz && \
-    echo "${LIBPRI_SHA256}  libpri.tar.gz" | sha256sum -c - && \
-    tar xzf libpri.tar.gz && cd libpri-1.6.1 && \
-    make -j$(nproc) && make install && ldconfig && cd ..
 RUN wget -q https://downloads.asterisk.org/pub/telephony/dahdi-linux-complete/dahdi-linux-complete-3.4.0+3.4.0.tar.gz -O dahdi.tar.gz && \
     echo "${DAHDI_SHA256}  dahdi.tar.gz" | sha256sum -c - && \
     tar xzf dahdi.tar.gz && cd dahdi-linux-complete-3.4.0+3.4.0 && \
@@ -55,6 +51,10 @@ RUN wget -q https://downloads.asterisk.org/pub/telephony/dahdi-linux-complete/da
     echo "${DAHDI_FIX_SHA256}  dahdi-fix.zip" | sha256sum -c - && \
     unzip -o dahdi-fix.zip && \
     make -j$(nproc) && make install && make config && cd ..
+RUN wget -q https://downloads.asterisk.org/pub/telephony/libpri/libpri-1.6.1.tar.gz -O libpri.tar.gz && \
+    echo "${LIBPRI_SHA256}  libpri.tar.gz" | sha256sum -c - && \
+    tar xzf libpri.tar.gz && cd libpri-1.6.1 && \
+    make -j$(nproc) && make install && ldconfig && cd ..
 RUN mkdir -p asterisk && cd asterisk && \
     wget -q https://download.vicidial.com/required-apps/${ASTERISK_TARBALL} -O asterisk.tar.gz && \
     echo "${ASTERISK_SHA256}  asterisk.tar.gz" | sha256sum -c - && \
