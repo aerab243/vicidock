@@ -10,7 +10,6 @@ MARKER=/var/lib/mysql/.vicidock-init-done
 mkdir -p /run/mysqld /run/httpd /var/log/astguiclient
 chown -R mysql:mysql /run/mysqld /var/lib/mysql
 chown apache:apache /run/httpd
-modprobe dahdi_dummy 2>/dev/null || true
 
 if [ ! -d /var/lib/mysql/mysql ]; then
   mysql_install_db --user=mysql --datadir=/var/lib/mysql --auth-root-authentication-method=normal

@@ -9,7 +9,6 @@ services:
       args:
         VICIDIAL_SVN_REV: ${VICIDIAL_SVN_REV:-3939}
     restart: unless-stopped
-    privileged: true # requis pour le timing DAHDI d'Asterisk (modprobe, /dev/dahdi)
     security_opt:
       - no-new-privileges:true
     pids_limit: 2048

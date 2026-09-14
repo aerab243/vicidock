@@ -10,6 +10,7 @@ calquée sur **ViciBox 12.0.2**. **Un tag = une version de VICIdial.**
 | Base | AlmaLinux 9 |
 | VICIdial | trunk SVN épinglé, rev **3939** par défaut (`VICIDIAL_SVN_REV`) |
 | Asterisk | 18.21.0-vici, ConfBridge + PJSIP (checksum SHA256 vérifié au build) |
+| Timing | timerfd via ConfBridge (pas de module kernel DAHDI en conteneur) |
 | PHP / Web | Apache + PHP 8.2 (Remi), VICIphone 3.0 inclus, TLS auto-signé |
 | Base | MariaDB 10.11 (10.5 en repli), non exposée hors conteneur |
 | Supervision | supervisord : mariadb, httpd, asterisk, crond, keepalives VICIdial |
@@ -51,11 +52,11 @@ Premier build : 30-60 min, image ~2-3 Go. Aucun secret à configurer
 
 ## Durcissement appliqué
 
-- SHA256 vérifié pour chaque source à version fixe (Asterisk, DAHDI, libs…)
+- SHA256 vérifié pour chaque source à version fixe (Asterisk, libs…)
+- **Pas de `privileged`** : aucun module kernel en conteneur, timing par timerfd
 - `no-new-privileges`, `pids_limit`, `/tmp` et `/run` en tmpfs
 - MySQL joignable uniquement dans le conteneur (port 3306 non publié)
 - `.dockerignore` : le contexte de build n'embarque ni `.git` ni `.env`
-- `privileged: true` conservé : obligatoire pour le timing DAHDI d'Asterisk
 
 ## Notes importantes
 
