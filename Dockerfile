@@ -81,7 +81,7 @@ RUN dnf -y install epel-release https://rpms.remirepo.net/enterprise/remi-releas
     dnf module reset -y php mariadb || true && \
     (dnf module enable -y mariadb:10.11 || dnf module enable -y mariadb:10.5) && \
     dnf module enable -y php:remi-8.2 && \
-    dnf -y install mariadb-server httpd mod_ssl openssl curl supervisor subversion screen \
+    dnf -y install mariadb-server httpd mod_ssl openssl supervisor subversion screen \
         cronie sox lame wget tar unzip \
         perl perl-DBI perl-DBD-MySQL perl-libwww-perl \
         php php-cli php-gd php-curl php-mysqli php-ldap php-zip php-fileinfo \
