@@ -1,33 +1,52 @@
-# Vicidock — VICIdial basé sur Docker
+# Vicidock — VICIdial all-in-one sur Docker
 
-Base minimale pour faire tourner VICIdial avec des images Docker pré-définies.
+**Une seule image** `ghcr.io/aerab243/vicidock` avec tous les services,
+calquée sur **ViciBox 12.0.2**. **Un tag = une version de VICIdial.**
 
-## Services
+## Contenu de l'image
 
-- `vicidial-db` : `mariadb:10.11` (image officielle, base `asterisk`)
-- `vicidial` : `ahroniy/vicidial:latest` (image communautaire, ~1.2 GB)
+| Couche | Version |
+|---|---|
+| Base | AlmaLinux 9 |
+| VICIdial | trunk SVN épinglé par build (`VICIDIAL_SVN_REV`) |
+| Asterisk | 18.21.0-vici, ConfBridge + PJSIP |
+| PHP / Web | Apache + PHP 8.2 (Remi), VICIphone 3.0 inclus |
+| Base | MariaDB 10.11 (10.5 en repli) |
+| Supervision | supervisord : mariadb, httpd, asterisk, crond, keepalives VICIdial |
 
-> Il n'existe pas d'image Docker officielle VICIdial / ViciBox.
-> `ahroniy/vicidial` est pratique pour démarrer mais non documentée
-> et mise à jour il y a plus d'un an. Pour la production,
-> prévoir de construire ses propres images (AlmaLinux 9 + Asterisk 18 + DAHDI).
-
-## Démarrage
+## Démarrage rapide (image publiée)
 
 ```bash
 cp .env.example .env
-# éditer .env (mots de passe + SERVER_IP = IP locale ou publique)
+# éditer .env : mots de passe + SERVER_IP (IP locale ou publique)
 docker compose up -d
 docker compose logs -f
 ```
 
 Accès : `http://localhost/vicidial/welcome.php`
 
+Au premier démarrage, l'entrypoint initialise MariaDB, crée la base `asterisk`
++ les users `cron`/`custom`, injecte le schéma du trunk et lance `install.pl`.
+Les démarrages suivants réutilisent le volume `mysql_data`.
+
+## Build local d'une version précise
+
+```bash
+VICIDOCK_TAG=2.14-3939 VICIDIAL_SVN_REV=3939 docker compose up -d --build
+```
+
+## CI/CD
+
+Le workflow `.github/workflows/docker-publish.yml` build et pousse l'image sur
+GHCR à chaque push sur `main`, à chaque tag `v*` (ex. `v2.14-3939`) et à la
+demande (`workflow_dispatch` → input `svn_rev`). Premier build : 30-60 min,
+image ~2-3 Go. Aucun secret à configurer (`GITHUB_TOKEN` suffit).
+
 ## Notes importantes
 
-- Le conteneur `vicidial` tourne en `privileged: true`, requis pour le
-  timing DAHDI / Meetme d'Asterisk. Sans ça, audio et dialer instables.
-- Plage RTP exposée : `10000-10500/udp`. À élargir si beaucoup d'appels.
-- En production, préférer `network_mode: host` pour Asterisk (SIP/RTP)
-  au lieu du mapping de ports, et garder MySQL au plus près du dialer
-  (latence critique pour les scripts Perl).
+- Conteneur `privileged: true` requis pour le timing DAHDI d'Asterisk.
+- Plage RTP `10000-20000/udp` : à réduire dans le compose + `rtp.conf` si besoin.
+- VICIphone 3.0 = softphone web servi par Apache (SIP.js) ; le WebRTC/SSL
+  se termine sur le port 443.
+- Docker = dev/test selon la communauté (timing haute-résolution + latence MySQL).
+  ~25 agents/serveur, SSD obligatoire.
