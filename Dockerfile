@@ -53,6 +53,23 @@ RUN mkdir -p asterisk && cd asterisk && \
     make -j$(nproc) && make install && make install-headers && make samples && \
     sed -i 's|noload = chan_sip.so|;noload = chan_sip.so|g' /etc/asterisk/modules.conf || true && \
     ldconfig && test -x /usr/sbin/asterisk && test -d /usr/include/asterisk && test -f /etc/asterisk/modules.conf
+# Dépendances partagées du binaire (détectées via ldd) + celles des modules
+# chargés dynamiquement (pjproject/srtp/jansson/ogg) : recopiées avec leurs
+# chemins pour l'image runtime qui ne les a pas.
+RUN mkdir -p /ast-deps && \
+    ldd /usr/sbin/asterisk | awk '/=> \//{print $3}' | while read -r lib; do \
+        mkdir -p "/ast-deps$(dirname "$lib")" && cp -L "$lib" "/ast-deps$lib"; \
+    done && \
+    for pat in '/usr/lib/libpj*.so*' '/usr/lib64/libpj*.so*' \
+               '/usr/lib/libsrtp*.so*' '/usr/lib64/libsrtp*.so*' \
+               '/usr/lib/libjansson*.so*' '/usr/lib64/libjansson*.so*' \
+               '/usr/lib/libogg*.so*' '/usr/lib64/libogg*.so*' \
+               '/usr/lib/libvorbis*.so*' '/usr/lib64/libvorbis*.so*'; do \
+        for f in $pat; do \
+            [ -e "$f" ] || continue; \
+            mkdir -p "/ast-deps$(dirname "$f")" && cp -L "$f" "/ast-deps$f"; \
+        done; \
+    done && find /ast-deps -name '*.so*' | sort
 RUN wget -q http://download.vicidial.com/required-apps/asterisk-perl-0.08.tar.gz -O astperl.tar.gz && \
     echo "${ASTPERL_SHA256}  astperl.tar.gz" | sha256sum -c - && \
     tar xzf astperl.tar.gz && cd asterisk-perl-0.08 && \
@@ -94,6 +111,7 @@ RUN dnf -y install epel-release https://rpms.remirepo.net/enterprise/remi-releas
         php-opcache php-mbstring php-imap php-xml php-soap php-intl php-bcmath && \
     dnf clean all && rm -rf /var/cache/dnf
 COPY --from=perldeps /opt/perl5 /opt/perl5
+COPY --from=builder /ast-deps/ /
 COPY --from=builder /usr/lib64/asterisk /usr/lib64/asterisk
 COPY --from=builder /usr/sbin/asterisk /usr/sbin/asterisk
 COPY --from=builder /etc/asterisk /etc/asterisk
