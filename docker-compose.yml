@@ -31,13 +31,15 @@ services:
       TZ: ${TZ:-UTC}
     # Asterisk a besoin de temps pour se couper proprement (calls en cours).
     stop_grace_period: 1m
+    # Ports pilotés par le .env (défauts standards) : surchargeables pour
+    # cohabiter avec d'autres stacks ou un reverse-proxy (ex. HTTP_PORT=8080).
     ports:
-      - "80:80"
-      - "443:443"
-      - "5060:5060/udp"
-      - "5060:5060/tcp"
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+      - "${SIP_PORT:-5060}:5060/udp"
+      - "${SIP_PORT:-5060}:5060/tcp"
       # Plage RTP réduite (~2500 appels simultanés max) : alignée avec rtp.conf.
-      - "10000-15000:10000-15000/udp"
+      - "${RTP_RANGE:-10000-15000}:${RTP_RANGE:-10000-15000}/udp"
     volumes:
       - mysql_data:/var/lib/mysql
       - recordings:/var/spool/asterisk/monitor
