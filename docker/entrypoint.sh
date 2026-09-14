@@ -12,8 +12,8 @@ TRUNK=/usr/src/astguiclient/trunk
 CRONTAB_SRC=/usr/local/share/vicidock/vicidial-crontab
 MARKER=/var/lib/mysql/.vicidock-init-done
 
-mkdir -p /run/mysqld /run/httpd /run/asterisk /var/log/astguiclient /var/log/asterisk /var/log/mysql
-chown -R mysql:mysql /run/mysqld /var/lib/mysql /var/log/mysql
+mkdir -p /run/mysqld /run/mariadb /run/httpd /run/asterisk /var/log/astguiclient /var/log/asterisk /var/log/mysql /var/log/mariadb
+chown -R mysql:mysql /run/mysqld /run/mariadb /var/lib/mysql /var/log/mysql /var/log/mariadb
 chown apache:apache /run/httpd
 
 # --- Fuseau horaire : système + PHP + MariaDB doivent être d'accord,
@@ -38,8 +38,11 @@ for _ in $(seq 1 30); do
   sleep 1
 done
 if ! mysqladmin ping -h localhost --silent; then
-  echo "ERREUR : MariaDB n'a pas démarré (voir /var/log/mariadb-init.log) :" >&2
-  tail -n 20 /var/log/mariadb-init.log >&2 || true
+  echo "ERREUR : MariaDB n'a pas démarré." >&2
+  echo "--- /var/log/mariadb/mariadb.log (daemon) ---" >&2
+  tail -n 20 /var/log/mariadb/mariadb.log >&2 || true
+  echo "--- /var/log/mariadb-init.log (mysqld_safe) ---" >&2
+  tail -n 5 /var/log/mariadb-init.log >&2 || true
   exit 1
 fi
 
