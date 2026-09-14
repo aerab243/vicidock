@@ -41,7 +41,6 @@ jobs:
             SVN_REV="${{ env.VICIDIAL_SVN_REV }}"
           else
             SVN_REV="${{ inputs.svn_rev }}"
-            TAG=""
           fi
           [[ "$SVN_REV" =~ ^[0-9]+$ ]] \
             || { echo "svn_rev invalide: $SVN_REV" >&2; exit 1; }
@@ -49,7 +48,6 @@ jobs:
           {
             echo "svn_rev=$SVN_REV"
             echo "ghcr_full=${GITHUB_REF_NAME}"
-            echo "ghcr_minor=v${TAG%.*}"
           } >> "$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
@@ -67,7 +65,6 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
             type=raw,value=${{ steps.ver.outputs.ghcr_full }}
-            type=raw,value=${{ steps.ver.outputs.ghcr_minor }}
             type=raw,value=latest
           labels: |
             vicidock.vicidial-rev=${{ steps.ver.outputs.svn_rev }}

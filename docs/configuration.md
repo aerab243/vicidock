@@ -35,7 +35,7 @@ Lettres/chiffres uniquement : éviter `' " \ ` et espaces (interprétés en SQL)
 
 | Variable | Défaut | Effet |
 |---|---|---|
-| `VICIDOCK_TAG` | `latest` | Tag d'image à tirer (ex. `v0.1`). Voir [versions](versions.md). |
+| `VICIDOCK_TAG` | `latest` | Tag d'image à tirer (ex. `v0.1.1`). Voir [versions](versions.md). |
 | `VICIDIAL_SVN_REV` | `3939` | Rev SVN pour un **build local** (`--build`) uniquement. Ignoré avec l'image publiée. |
 
 ## TLS

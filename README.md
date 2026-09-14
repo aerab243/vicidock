@@ -27,10 +27,9 @@ crontab, IP et externip SIP/RTP configurés seuls. Ensuite :
 | Tag | Contenu |
 |---|---|
 | `latest` | Dernière release |
-| `v0.1` | Dernière `v0.1.x` (prod) |
-| `v0.1.0` | Build exact |
+| `v0.1.1` | Release exacte (prod) |
 
-Épingler en prod : `VICIDOCK_TAG=v0.1` dans le `.env`.
+Épingler en prod sur un tag exact (`VICIDOCK_TAG=v0.1.1`), jamais `latest`.
 Sémantique : patch = correctifs, minor = nouveautés, major = ruptures
 (détails + exemples : [versions](docs/versions.md)).
 
