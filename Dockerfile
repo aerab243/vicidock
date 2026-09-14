@@ -50,9 +50,9 @@ RUN mkdir -p asterisk && cd asterisk && \
     make menuselect/menuselect menuselect-tree menuselect.makeopts && \
     menuselect/menuselect --enable res_http_websocket menuselect.makeopts && \
     menuselect/menuselect --enable res_srtp menuselect.makeopts && \
-    make samples && \
+    make -j$(nproc) && make install && make samples && \
     sed -i 's|noload = chan_sip.so|;noload = chan_sip.so|g' /etc/asterisk/modules.conf || true && \
-    make -j$(nproc) && make install && make config && ldconfig
+    ldconfig
 RUN wget -q http://download.vicidial.com/required-apps/asterisk-perl-0.08.tar.gz -O astperl.tar.gz && \
     echo "${ASTPERL_SHA256}  astperl.tar.gz" | sha256sum -c - && \
     tar xzf astperl.tar.gz && cd asterisk-perl-0.08 && \
