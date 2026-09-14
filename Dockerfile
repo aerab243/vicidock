@@ -26,7 +26,7 @@ RUN dnf -y install epel-release dnf-plugins-core && \
     dnf -y groupinstall "Development Tools" && \
     dnf -y install wget tar bzip2 unzip patch perl \
         newt-devel libxml2-devel sqlite-devel libuuid-devel readline-devel \
-        openssl-devel alsa-lib-devel libogg-devel libvorbis-devel curl-devel && \
+        openssl-devel alsa-lib-devel libogg-devel libvorbis-devel curl-devel libedit-devel && \
     dnf clean all && rm -rf /var/cache/dnf
 WORKDIR /usr/src
 RUN wget -q https://digip.org/jansson/releases/jansson-2.13.tar.gz -O jansson.tar.gz && \
