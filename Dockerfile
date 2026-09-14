@@ -45,7 +45,7 @@ RUN mkdir -p asterisk && cd asterisk && \
     wget -q https://download.vicidial.com/required-apps/${ASTERISK_TARBALL} -O asterisk.tar.gz && \
     echo "${ASTERISK_SHA256}  asterisk.tar.gz" | sha256sum -c - && \
     tar xzf asterisk.tar.gz && cd asterisk-18*/ && \
-    ./configure --libdir=/usr/lib64 --with-gsm=internal --enable-opus --enable-srtp \
+    ./configure --libdir=/usr/lib64 --with-gsm=internal \
         --with-ssl --enable-asteriskssl --with-pjproject-bundled --with-jansson-bundled && \
     make menuselect/menuselect menuselect-tree menuselect.makeopts && \
     menuselect/menuselect --enable res_http_websocket menuselect.makeopts && \
