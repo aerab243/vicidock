@@ -8,7 +8,23 @@ Les tags versionnent **vicidock** (l'image + l'outillage), pas VICIdial :
 - La rev VICIdial embarquée est fixée par le workflow
   (`VICIDIAL_SVN_REV`, défaut `3939`) et rappelée dans le label
   d'image `vicidock.vicidial-rev` + la matrice ci-dessous.
-- Changer de rev SVN = nouveau tag mineur/patch + matrice à jour.
+- Changer de rev SVN = au minimum MINOR (nouveau contenu dialer),
+  matrice ci-dessous à jour.
+- **Aucun tag n'est coupé sans validation explicite du mainteneur.**
+
+## Sémantique : patch, minor, majeur (exemples)
+
+- **PATCH** (`0.1.0` → `0.1.1`) : correctif rétrocompatible. Exemples :
+  bug d'entrypoint (PID MariaDB, placeholders d'includes), bump de paquets,
+  fix de sécurité Apache, docs.
+- **MINOR** (`0.1.x` → `0.2.0`) : nouveauté rétrocompatible. Exemples :
+  nouvelle variable optionnelle, nouveau programme supervisé, guides
+  Dokploy/Openship, support WebRTC, montée de rev VICIdial.
+- **MAJOR** (`0.x` → `1.0.0`) : rupture. Exemples : format du compose
+  incompatible, variable obligatoire nouvelle, changement d'OS de base,
+  passage multi-images, montée majeure d'Asterisk.
+- Tant qu'on est en `0.x`, l'API (compose, `.env`) peut encore bouger ;
+  `1.0.0` marquera la stabilité promise.
 
 ## Tags d'images publiés (GHCR)
 

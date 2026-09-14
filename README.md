@@ -31,6 +31,8 @@ crontab, IP et externip SIP/RTP configurés seuls. Ensuite :
 | `sha-…` | Build lié à un commit (traçabilité) |
 
 Épingler en prod : `VICIDOCK_TAG=0.1` dans le `.env`.
+Sémantique : patch = correctifs, minor = nouveautés, major = ruptures
+(détails + exemples : [versions](docs/versions.md)).
 
 ## Documentation
 
