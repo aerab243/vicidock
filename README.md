@@ -1,24 +1,14 @@
 # Vicidock — VICIdial all-in-one sur Docker
 
-**Une seule image** `ghcr.io/aerab243/vicidock` avec tous les services,
-calquée sur **ViciBox 12.0.2**. **Un tag = une version de VICIdial.**
+[![validate](https://github.com/aerab243/vicidock/actions/workflows/validate.yml/badge.svg)](https://github.com/aerab243/vicidock/actions/workflows/validate.yml)
+[![docker-publish](https://github.com/aerab243/vicidock/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/aerab243/vicidock/actions/workflows/docker-publish.yml)
+[![ghcr](https://img.shields.io/badge/ghcr.io-vicidock-blue?logo=docker)](https://github.com/aerab243/vicidock/pkgs/container/vicidock)
 
-## Contenu de l'image
+**Une seule image** avec tout VICIdial dedans (web, Asterisk, MariaDB,
+daemons Perl), calquée sur **ViciBox 12.0.2**. **Un tag = une version de
+VICIdial** (voir [versions](docs/versions.md)).
 
-| Couche | Version |
-|---|---|
-| Base | AlmaLinux 9 |
-| VICIdial | trunk SVN épinglé, rev **3939** par défaut (`VICIDIAL_SVN_REV`) |
-| Asterisk | 18.21.0-vici, ConfBridge + PJSIP (checksum SHA256 vérifié au build) |
-| Timing | timerfd via ConfBridge (pas de module kernel DAHDI en conteneur) |
-| PHP / Web | Apache + PHP 8.2 (Remi), réglages VICIdial + `date.timezone` via `$TZ`, VICIphone 3.0 inclus, TLS auto-signé |
-| Perl | Modules CPAN requis par VICIdial (Net::Telnet, Proc::ProcessTable, Spreadsheet::*, Mail::*, etc.) |
-| Mail | sendmail local (notifications/voicemails) |
-| Tâches planifiées | Crontab VICIdial complète (`docker/vicidial-crontab` : hopper, keepalive, mixage MP3, optimisations DB) |
-| Base | MariaDB 10.11 (10.5 en repli), non exposée hors conteneur |
-| Supervision | supervisord : mariadb, httpd, asterisk, crond, keepalives VICIdial |
-
-## Démarrage rapide (image publiée)
+## Démarrage rapide
 
 ```bash
 cp .env.example .env
@@ -27,82 +17,34 @@ docker compose up -d
 docker compose logs -f
 ```
 
-Accès : `https://localhost/vicidial/welcome.php` (certificat auto-signé au
-premier boot — remplacez-le par un vrai cert en montant vos fichiers sur
-`/etc/pki/tls/certs/vicidock.crt` et `/etc/pki/tls/private/vicidock.key`).
+Premier boot (~5-10 min) : MariaDB, schéma, données de base, `install.pl`,
+crontab, IP et externip SIP/RTP configurés seuls. Ensuite :
+`https://localhost/vicidial/welcome.php`, login `6666` + `ADMIN_PASSWORD`.
 
-Au premier démarrage, l'entrypoint initialise MariaDB, crée la base `asterisk`
-+ les users `cron`/`custom`, injecte le schéma du trunk et lance `install.pl`.
-Les démarrages suivants réutilisent le volume `mysql_data`. Un healthcheck
-surveille la page d'accueil.
+## Tags d'images
 
-## Premier login et premier appel (10 min)
+| Tag | Contenu |
+|---|---|
+| `latest` | Dernière release |
+| `2.14-3939` | Dernier build de VICIdial rev 3939 |
+| `2.14-3939.1` | Build exact (rev + patch vicidock) |
+| `sha-…` | Build lié à un commit (traçabilité) |
 
-Login : `6666` + mot de passe `ADMIN_PASSWORD` du `.env` (défini
-automatiquement au premier boot et signalé dans les logs ; si
-`ADMIN_PASSWORD` est vide, c'est `6666`/`1234` — **à changer aussitôt**).
-L'entrypoint charge déjà le schéma, les données de base
-(`first_server_install.sql`), les indicatifs (`area codes`),
-la crontab, cale l'IP (`SERVER_IP`) partout et écrit l'externip SIP/RTP
-(`PUBLIC_IP`, défaut = `SERVER_IP`) avec les réseaux locaux.
+Épingler en prod : `VICIDOCK_TAG=2.14-3939` dans le `.env`.
 
-1. Admin > Servers : vérifier timezone et IP (`SERVER_IP` du `.env`).
-2. Admin > Carriers : ajouter le trunk SIP du provider (codec `ulaw`
-   pour commencer), vérifier `asterisk -rx "pjsip show registrations"`.
-3. Admin > Campaigns : créer `TEST01` (dial `RATIO`, niveau `1.0`).
-4. Admin > Lists : créer une liste rattachée à `TEST01`, y charger
-   quelques leads (`phone_code`, `phone_number`, nom).
-5. Admin > Users + Admin > Phones : créer l'agent et son poste SIP.
-6. Interface agent : `https://<serveur>/agc/vicidial.php` → login,
-   campagne `TEST01`, Resume.
+## Documentation
 
-## Build local d'une version précise
+- [Installation](docs/installation.md) — prérequis, `.env`, ports, premier boot
+- [Configuration](docs/configuration.md) — référence de toutes les variables
+- [Versions](docs/versions.md) — politique de tags, mises à jour, releases
+- [Opérations](docs/operations.md) — logs, supervision, backup, dépannage
+- [Premier appel](docs/premier-appel.md) — carrier, campagne, agent (10 min)
+- [Architecture](docs/architecture.md) — pourquoi une seule image, et comment
+- [Dokploy](docs/dokploy.md) — déployer l'image publiée sur un PaaS
 
-```bash
-VICIDOCK_TAG=2.14-3939 VICIDIAL_SVN_REV=3939 docker compose up -d --build
-```
+## Contenu de l'image
 
-## CI/CD
-
-Le workflow `.github/workflows/docker-publish.yml` :
-- build sur push `main`, tags `v*`, **rebuild mensuel** (patchs Alma/Remi),
-  et manuel (`workflow_dispatch` → `svn_rev`)
-- **scan Trivy : publication bloquée si CVE critique**
-- push GHCR si tout est vert (tags `latest`, version, sha)
-
-Premier build : 30-60 min, image ~2-3 Go. Aucun secret à configurer
-(`GITHUB_TOKEN` suffit).
-
-## Durcissement appliqué
-
-- SHA256 vérifié pour chaque source à version fixe (Asterisk, libs…)
-- **Pas de `privileged`** : aucun module kernel en conteneur, timing par timerfd
-- `no-new-privileges`, `pids_limit`, `/tmp` et `/run` en tmpfs
-- MySQL joignable uniquement dans le conteneur (port 3306 non publié)
-- `.dockerignore` : le contexte de build n'embarque ni `.git` ni `.env`
-
-## Notes importantes
-
-- Plage RTP `10000-15000/udp` (~2500 appels simultanés), alignée entre
-  le compose et `rtp.conf` (réglée automatiquement à chaque boot).
-- Daemons VICIdial sous supervisord (restart auto + logs) + crontab
-  keepalive en filet de sécurité. Healthcheck fonctionnel :
-  `http://localhost/healthcheck.php` (DB + extensions PHP).
-- MariaDB tunée (`/etc/my.cnf.d/vicidock.cnf`) ; schéma rev 3939
-  immunisé contre le bug TIMESTAMP de ViciBox 12.
-- VICIphone 3.0 = softphone web servi par Apache (SIP.js) en WebRTC sur le 443.
-- Timezone : `TZ` dans le `.env` (système + PHP + MariaDB alignés
-  automatiquement). Un désaccord affiche `time synchronization problem`.
-- Pare-feu hôte (ex. firewalld) : ouvrir `5060/tcp+udp` (SIP),
-  `10000-15000/udp` (RTP), `80/443/tcp` (web). Sans audio = presque
-  toujours RTP bloqué ou NAT : renseigner `externip`/`localnet` dans
-  la conf SIP Asterisk.
-- Codecs : commencer en `ulaw` (G.711) des deux côtés ; une erreur
-  `488 Not Acceptable Here` = désaccord de codec avec le provider.
-- `manager.conf` est restreint à `127.0.0.1` au premier boot.
-- Correspondance avec le guide ViciStack (méthode 3 Docker) : une seule
-  image ici au lieu de 3 conteneurs, MariaDB non exposée, et **pas de
-  `privileged` ni de DAHDI kernel** — le timing passe par timerfd via
-  ConfBridge (le moteur moderne de VICIdial, MeetMe étant historique).
-- Docker = dev/test selon la communauté (timing haute-résolution + latence MySQL).
-  ~25 agents/serveur, SSD obligatoire.
+Base AlmaLinux 9 · VICIdial trunk SVN · Asterisk 18.21.0-vici (ConfBridge,
+PJSIP, res_http_websocket, srtp) · Apache + PHP 8.2 · MariaDB 10.11 (interne
+uniquement) · Perl + modules CPAN · crontab VICIdial · supervisord.
+Détails : [architecture](docs/architecture.md).

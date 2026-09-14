@@ -1,16 +1,14 @@
 name: docker-publish
 
+# Publication UNIQUEMENT sur tag de version : v2.14-3939, v2.14-3939.1, ...
+# (docs/versions.md). Validation rapide sur main : workflow validate.yml.
 on:
   push:
-    branches: [main]
     tags: ["v*"]
-  schedule:
-    # Rebuild mensuel : suit les patchs de sécurité AlmaLinux/Remi
-    - cron: "0 3 1 * *"
   workflow_dispatch:
     inputs:
       svn_rev:
-        description: "Révision SVN VICIdial à builder (ex. 3939)"
+        description: "Révision SVN VICIdial à tester (build + scan, SANS push)"
         required: false
         default: "3939"
 
@@ -28,11 +26,35 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+
+      - name: Parse version tag
+        id: ver
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            TAG="${GITHUB_REF_NAME#v}"
+            [[ "$TAG" =~ ^[0-9]+\.[0-9]+-[0-9]+(\.[0-9]+)?$ ]] \
+              || { echo "Tag invalide: $GITHUB_REF_NAME (attendu vX.Y-REV[.N])" >&2; exit 1; }
+            REV_PART="${TAG##*-}"
+            SVN_REV="${REV_PART%%.*}"
+            BUILD_N="${REV_PART#*.}"
+            [ "$BUILD_N" = "$REV_PART" ] && BUILD_N=0
+            if [ "$BUILD_N" = 0 ]; then GHCR_REV="$TAG"; else GHCR_REV="${TAG%.*}"; fi
+            echo "tag=$TAG svn_rev=$SVN_REV build=$BUILD_N ghcr_rev=$GHCR_REV"
+            {
+              echo "svn_rev=$SVN_REV"
+              echo "build_n=$BUILD_N"
+              echo "ghcr_full=$TAG"
+              echo "ghcr_rev=$GHCR_REV"
+            } >> "$GITHUB_OUTPUT"
+          else
+            SVN_REV="${{ inputs.svn_rev }}"
+            [[ "$SVN_REV" =~ ^[0-9]+$ ]] \
+              || { echo "svn_rev invalide: $SVN_REV" >&2; exit 1; }
+            echo "svn_rev=$SVN_REV (dispatch, sans push)"
+            echo "svn_rev=$SVN_REV" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -43,13 +65,18 @@ jobs:
 
       - name: Extract metadata (tags)
         id: meta
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=match,pattern=v(.*),group=1
-            type=sha
+            type=raw,value=${{ steps.ver.outputs.ghcr_full }}
+            type=raw,value=${{ steps.ver.outputs.ghcr_rev }}
+            type=raw,value=latest
+            type=sha,prefix=sha-
+          labels: |
+            vicidock.vicidial-rev=${{ steps.ver.outputs.svn_rev }}
+            vicidock.build=${{ steps.ver.outputs.build_n }}
 
       - name: Build (local, sans push)
         uses: docker/build-push-action@v6
@@ -63,7 +90,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            VICIDIAL_SVN_REV=${{ inputs.svn_rev || '3939' }}
+            VICIDIAL_SVN_REV=${{ steps.ver.outputs.svn_rev }}
 
       # Action officielle : binaire Trivy direct sur le runner (pas de pull
       # Docker Hub, pas de socket), avec acces a l'image locale vicidock:scan.
@@ -76,6 +103,7 @@ jobs:
           exit-code: 1
 
       - name: Build and push
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -85,4 +113,4 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           build-args: |
-            VICIDIAL_SVN_REV=${{ inputs.svn_rev || '3939' }}
+            VICIDIAL_SVN_REV=${{ steps.ver.outputs.svn_rev }}
