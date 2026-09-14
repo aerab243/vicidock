@@ -57,6 +57,8 @@ jobs:
           context: .
           load: true
           push: false
+          # VICIdial/Asterisk = x86_64 uniquement (pas de build ARM).
+          platforms: linux/amd64
           tags: vicidock:scan
           cache-from: type=gha
           cache-to: type=gha,mode=max
@@ -65,7 +67,7 @@ jobs:
 
       - name: Scan Trivy (bloque si CVE critique)
         run: |
-          docker run --rm -v /var/run/docker.sock:/var/run/docker.sock \
+          docker run --rm \
             aquasecurity/trivy:latest image --exit-code 1 --severity CRITICAL \
             --no-progress vicidock:scan
 
@@ -74,6 +76,7 @@ jobs:
         with:
           context: .
           push: true
+          platforms: linux/amd64
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha

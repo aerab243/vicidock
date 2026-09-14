@@ -20,6 +20,11 @@ services:
       MYSQL_CRON_PASSWORD: ${MYSQL_CRON_PASSWORD:?MYSQL_CRON_PASSWORD manquant (voir .env)}
       CUSTOM_PASSWORD: ${CUSTOM_PASSWORD:-custom1234}
       SERVER_IP: ${SERVER_IP:-127.0.0.1}
+      # Fuseau horaire commun système/PHP/MariaDB (ex. Europe/Paris).
+      # Un désaccord provoque l'erreur "time synchronization problem".
+      TZ: ${TZ:-UTC}
+    # Asterisk a besoin de temps pour se couper proprement (calls en cours).
+    stop_grace_period: 1m
     ports:
       - "80:80"
       - "443:443"
@@ -30,7 +35,8 @@ services:
       - mysql_data:/var/lib/mysql
       - recordings:/var/spool/asterisk/monitor
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/vicidial/welcome.php"]
+      # wget (pas curl) : curl n'est pas installé dans l'image.
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost/vicidial/welcome.php"]
       interval: 30s
       timeout: 10s
       retries: 3

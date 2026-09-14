@@ -58,20 +58,42 @@ RUN wget -q http://download.vicidial.com/required-apps/asterisk-perl-0.08.tar.gz
     tar xzf astperl.tar.gz && cd asterisk-perl-0.08 && \
     perl Makefile.PL && make -j$(nproc) && make install && cd ..
 
+# ---------------- perldeps : modules CPAN manquants/cassés en RPM ----------------
+# EPEL9 ne fournit pas (ou avec dépendances cassées) : IO::Stringy,
+# OLE::Storage_Lite, Spreadsheet::*, HTML::Tree/Strip/Formatter,
+# Crypt::Eksblowfish. Construits ici (compilateur dispo), copiés ensuite.
+FROM almalinux:${ALMA_RELEASE} AS perldeps
+RUN dnf -y install epel-release && \
+    dnf -y install perl perl-devel perl-App-cpanminus gcc make && \
+    dnf clean all && rm -rf /var/cache/dnf
+RUN cpanm -n -L /opt/perl5 \
+        IO::Stringy OLE::Storage_Lite \
+        Spreadsheet::ParseExcel Spreadsheet::WriteExcel Spreadsheet::XLSX Spreadsheet::Read \
+        HTML::Tree HTML::Strip HTML::Formatter \
+        Crypt::Eksblowfish::Bcrypt && \
+    rm -rf /root/.cpanm /tmp/p5-build 2>/dev/null || true
+
 # ---------------- runtime : MariaDB + Apache/PHP + VICIdial ----------------
 FROM almalinux:${ALMA_RELEASE}
 ARG VICIDIAL_SVN_REV
 ENV VICIDIAL_SVN_REV=${VICIDIAL_SVN_REV}
+ENV PERL5LIB=/opt/perl5/lib/perl5
 RUN dnf -y install epel-release https://rpms.remirepo.net/enterprise/remi-release-9.rpm && \
     dnf module reset -y php mariadb || true && \
     (dnf module enable -y mariadb:10.11 || dnf module enable -y mariadb:10.5) && \
     dnf module enable -y php:remi-8.2 && \
     dnf -y install mariadb-server httpd mod_ssl openssl supervisor subversion screen \
-        cronie sox lame wget tar unzip \
+        cronie sox lame wget tar unzip sendmail tzdata \
         perl perl-DBI perl-DBD-MySQL perl-libwww-perl \
+        perl-CPAN perl-YAML perl-GD perl-Env perl-Term-ReadLine-Gnu perl-SelfLoader perl-open \
+        perl-Net-Telnet perl-Proc-ProcessTable perl-Net-Server \
+        perl-Mail-Sendmail perl-Mail-POP3Client perl-Mail-IMAPClient \
+        perl-Curses perl-TermReadKey perl-Unicode-Map perl-IO-Socket-SSL perl-Text-CSV \
+        perl-HTML-Parser perl-HTML-Tagset perl-MIME-tools perl-Digest-SHA1 \
         php php-cli php-gd php-curl php-mysqli php-ldap php-zip php-fileinfo \
         php-opcache php-mbstring php-imap php-xml php-soap php-intl php-bcmath && \
     dnf clean all && rm -rf /var/cache/dnf
+COPY --from=perldeps /opt/perl5 /opt/perl5
 COPY --from=builder /usr/lib64/asterisk /usr/lib64/asterisk
 COPY --from=builder /usr/lib/asterisk /usr/lib/asterisk
 COPY --from=builder /usr/sbin/asterisk /usr/sbin/asterisk
@@ -85,13 +107,18 @@ RUN svn checkout -r ${VICIDIAL_SVN_REV} svn://svn.eflo.net/agc_2-X/trunk /usr/sr
     cp -a /usr/src/astguiclient/trunk/bin/. /usr/share/astguiclient/ && \
     chown -R apache:apache /var/www/html
 RUN cd /var/lib/asterisk/sounds && \
-    wget -q https://downloads.asterisk.org/pub/telephony/sounds/asterisk-core-sounds-en-ulaw-current.tar.gz && \
-    tar xzf asterisk-core-sounds-en-ulaw-current.tar.gz && rm -f *.tar.gz
+    for s in asterisk-core-sounds-en-ulaw asterisk-extra-sounds-en-ulaw asterisk-moh-opsound-ulaw; do \
+        wget -q "https://downloads.asterisk.org/pub/telephony/sounds/${s}-current.tar.gz" && \
+        tar xzf "${s}-current.tar.gz"; \
+    done && rm -f *.tar.gz && test -f ulaw-followme.ulaw -o -f hello-world.ulaw
 COPY docker/supervisord.conf /etc/supervisord.conf
+COPY docker/vicidial-crontab /usr/local/share/vicidock/vicidial-crontab
+COPY docker/vicidock-php.ini /etc/php.d/50-vicidock.ini
 COPY docker/entrypoint.sh docker/vicidial-run.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/vicidial-run.sh
 EXPOSE 80 443 5060/tcp 5060/udp 10000-20000/udp
 VOLUME ["/var/lib/mysql", "/var/spool/asterisk/monitor"]
-HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
-    CMD curl -f http://localhost/vicidial/welcome.php || exit 1
+# wget, pas curl : curl n'est pas installé dans l'image (conflit curl-minimal).
+HEALTHCHECK --interval=30s --timeout=10s --start-period=180s --retries=3 \
+    CMD wget -q -O /dev/null http://localhost/vicidial/welcome.php || exit 1
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
