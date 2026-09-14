@@ -194,6 +194,16 @@ with open(path, 'w') as f:
     f.writelines(out)
 PYEOF
 
+# Includes Asterisk référencés mais absents (ex. pjsip-vicidial.conf avant sa
+# génération par le keepalive) : placeholders vides pour un parse propre.
+grep -rhoE '^[[:space:]]*#[iI]nclude[[:space:]]+[^ ;#]+' /etc/asterisk/*.conf 2>/dev/null | \
+  awk '{print $NF}' | sort -u | while read -r inc; do
+    case "$inc" in
+      *\** | */* | *..*) continue ;;
+    esac
+    [ -e "/etc/asterisk/$inc" ] || : > "/etc/asterisk/$inc"
+  done
+
 # Plage RTP écrite dans Asterisk (défaut 10000-15000, ~2500 appels).
 # Réductible (ex. 10000-10099 = 100 ports) : Docker crée un processus
 # proxy par port mappé, 5000 ports peuvent épuiser une petite machine.

@@ -109,7 +109,7 @@ RUN dnf -y install epel-release https://rpms.remirepo.net/enterprise/remi-releas
     (dnf module enable -y mariadb:10.11 || dnf module enable -y mariadb:10.5) && \
     dnf module enable -y php:remi-8.2 && \
     dnf -y install mariadb-server httpd mod_ssl openssl supervisor subversion screen \
-        cronie sox lame wget tar unzip sendmail tzdata \
+        cronie sox lame wget tar unzip sendmail tzdata procps-ng sqlite \
         perl perl-DBI perl-DBD-MySQL perl-libwww-perl \
         perl-CPAN perl-YAML perl-GD perl-Env perl-Term-ReadLine-Gnu perl-SelfLoader perl-open \
         perl-Net-Telnet perl-Proc-ProcessTable perl-Net-Server \
@@ -149,7 +149,10 @@ COPY docker/healthcheck.php /var/www/html/healthcheck.php
 RUN sed -i 's/^;*clear_env = .*/clear_env = no/' /etc/php-fpm.d/www.conf && \
     grep -q '^clear_env = no' /etc/php-fpm.d/www.conf
 COPY docker/entrypoint.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/entrypoint.sh
+COPY docker/vicidial-perl.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/vicidial-perl.sh
+# Nette le warning AH00558 (aucun effet fonctionnel).
+RUN printf 'ServerName localhost\n' > /etc/httpd/conf.d/00-vicidock.conf
 EXPOSE 80 443 5060/tcp 5060/udp 10000-20000/udp
 VOLUME ["/var/lib/mysql", "/var/spool/asterisk/monitor"]
 # wget, pas curl : curl n'est pas installé dans l'image (conflit curl-minimal).
